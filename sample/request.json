@@ -1,0 +1,33 @@
+{
+  "_links": {
+    "self": {
+      "href": "https://YOUR_SERVICE_URL"
+    }
+  },
+  "arena": {
+    "dims": [20, 20],
+    "state": {
+      "https://A_PLAYERS_URL": {
+        "x": 10,
+        "y": 10,
+        "direction": "E",
+        "wasHit": false,
+        "score": 0
+      },
+      "https://B_PLAYERS_URL": {
+        "x": 5,
+        "y": 15,
+        "direction": "E",
+        "wasHit": false,
+        "score": 0
+      },
+      "https://YOUR_SERVICE_URL": {
+        "x": 2,
+        "y": 2,
+        "direction": "S",
+        "wasHit": false,
+        "score": 0
+      }
+    }
+  }
+}
