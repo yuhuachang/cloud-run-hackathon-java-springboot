@@ -42,6 +42,11 @@ public class Application {
 
         // default move forward if not hit the walls.
         String bestDecision = getDefaultAction(arenaUpdate);
+        String secondDecision = bestDecision;
+
+        if (hasTarget(gameBoard, myself)) {
+            bestDecision = "T";
+        }
 
         int currentValue = gameBoard[myself.x][myself.y];
         int bestValue = currentValue;
@@ -58,12 +63,16 @@ public class Application {
             if (nextValue > bestValue) {
                 bestValue = nextValue;
                 bestDecision = getAction(myself, nextState);
+                System.out.println("accept best decision = " + bestDecision);
+            } else if (nextValue >= bestValue) {
+                secondDecision = getAction(myself, nextState);
+                System.out.println("accept second best decision = " + secondDecision);
+            } else if (nextValue < bestValue) {
+                bestDecision = secondDecision;
+                System.out.println("avoid this action, use this instead = " + bestValue);
             }
         }
 
-        if (bestValue > 2 && hasTarget(gameBoard, myself)) {
-            bestDecision = "T";
-        }
         System.out.println("X = (" + myself.x + ", " + myself.y + ") " + myself.direction + " ==> " + bestDecision);
         return bestDecision;
     }
