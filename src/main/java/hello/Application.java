@@ -11,9 +11,9 @@ import java.util.*;
 @RestController
 public class Application {
 
-//    public static void main(String[] args) {
-//        SpringApplication.run(Application.class, args);
-//    }
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
 
     @InitBinder
     public void initBinder(WebDataBinder binder) {
@@ -323,41 +323,41 @@ public class Application {
         return false;
     }
 
-    public static void main(String[] args) {
-        ArenaUpdate arenaUpdate = new ArenaUpdate();
-        arenaUpdate._links = new Links();
-        arenaUpdate._links.self = new Self();
-        arenaUpdate._links.self.href = "MYSELF";
-        arenaUpdate.arena = new Arena();
-        arenaUpdate.arena.dims = new ArrayList<>(2);
-        arenaUpdate.arena.dims.add(0, 20);
-        arenaUpdate.arena.dims.add(1, 10);
-        arenaUpdate.arena.state = new HashMap<>();
-        {
-            PlayerState attacker = new PlayerState();
-            attacker.direction = "E";
-            attacker.x = 3;
-            attacker.y = 5;
-            arenaUpdate.arena.state.put("A", attacker);
-        }
-        {
-            PlayerState attacker = new PlayerState();
-            attacker.direction = "N";
-            attacker.x = 5;
-            attacker.y = 8;
-            arenaUpdate.arena.state.put("B", attacker);
-        }
-        {
-            PlayerState attacker = new PlayerState();
-            attacker.direction = "N";
-            attacker.x = 0;
-            attacker.y = 5;
-            arenaUpdate.arena.state.put("MYSELF", attacker);
-        }
-
-        Application app = new Application();
-        app.index(arenaUpdate);
-    }
+//    public static void main(String[] args) {
+//        ArenaUpdate arenaUpdate = new ArenaUpdate();
+//        arenaUpdate._links = new Links();
+//        arenaUpdate._links.self = new Self();
+//        arenaUpdate._links.self.href = "MYSELF";
+//        arenaUpdate.arena = new Arena();
+//        arenaUpdate.arena.dims = new ArrayList<>(2);
+//        arenaUpdate.arena.dims.add(0, 20);
+//        arenaUpdate.arena.dims.add(1, 10);
+//        arenaUpdate.arena.state = new HashMap<>();
+//        {
+//            PlayerState attacker = new PlayerState();
+//            attacker.direction = "E";
+//            attacker.x = 3;
+//            attacker.y = 5;
+//            arenaUpdate.arena.state.put("A", attacker);
+//        }
+//        {
+//            PlayerState attacker = new PlayerState();
+//            attacker.direction = "N";
+//            attacker.x = 5;
+//            attacker.y = 8;
+//            arenaUpdate.arena.state.put("B", attacker);
+//        }
+//        {
+//            PlayerState attacker = new PlayerState();
+//            attacker.direction = "N";
+//            attacker.x = 0;
+//            attacker.y = 5;
+//            arenaUpdate.arena.state.put("MYSELF", attacker);
+//        }
+//
+//        Application app = new Application();
+//        app.index(arenaUpdate);
+//    }
 
     public int[][] calculateGameBoard(ArenaUpdate arenaUpdate) {
         int width = arenaUpdate.arena.dims.get(0);
