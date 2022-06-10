@@ -67,9 +67,9 @@ public class Application {
             } else if (nextValue >= bestValue) {
                 secondDecision = getAction(myself, nextState);
                 System.out.println("accept second best decision = " + secondDecision);
-            } else if (nextValue < bestValue) {
+            } else if (bestDecision.equals(getAction(myself, nextState)) && nextValue < bestValue) {
                 bestDecision = secondDecision;
-                System.out.println("avoid this action, use this instead = " + bestValue);
+                System.out.println("avoid this action, use this instead = " + bestDecision);
             }
         }
 
