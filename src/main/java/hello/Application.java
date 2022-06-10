@@ -43,9 +43,9 @@ public class Application {
         // default move forward if not hit the walls.
         String bestDecision = getDefaultAction(arenaUpdate);
 
-
         int currentValue = gameBoard[myself.x][myself.y];
         int bestValue = currentValue;
+        System.out.println("bestValue = " + bestValue);
 
         List<PlayerState> possibleStates1 = possiblePlayerState(myself);
         for (PlayerState nextState : possibleStates1) {
@@ -64,7 +64,7 @@ public class Application {
         if (bestValue > 2 && hasTarget(gameBoard, myself)) {
             bestDecision = "T";
         }
-        System.out.println("=========> " + bestDecision);
+        System.out.println("X = (" + myself.x + ", " + myself.y + ") " + myself.direction + " ==> " + bestDecision);
         return bestDecision;
     }
 
