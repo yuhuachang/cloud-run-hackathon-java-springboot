@@ -11,9 +11,9 @@ import java.util.*;
 @RestController
 public class Application {
 
-    public static void main(String[] args) {
-        SpringApplication.run(Application.class, args);
-    }
+//    public static void main(String[] args) {
+//        SpringApplication.run(Application.class, args);
+//    }
 
     @InitBinder
     public void initBinder(WebDataBinder binder) {
@@ -27,8 +27,6 @@ public class Application {
 
     @PostMapping("/**")
     public String index(@RequestBody ArenaUpdate arenaUpdate) {
-        System.out.println(arenaUpdate);
-
 
         int width = arenaUpdate.arena.dims.get(0);
         int height = arenaUpdate.arena.dims.get(1);
@@ -39,51 +37,51 @@ public class Application {
         // myself
         String myUrl = arenaUpdate._links.self.href;
         PlayerState myself = arenaUpdate.arena.state.get(myUrl);
-
-        // default move forward if not hit the walls.
-        String bestDecision = getDefaultAction(arenaUpdate);
-        String secondDecision = bestDecision;
-
-        if (hasTarget(gameBoard, myself)) {
-            bestDecision = "T";
-        }
-
         int currentValue = gameBoard[myself.x][myself.y];
-        int bestValue = currentValue;
-        System.out.println("bestValue = " + bestValue);
+        System.out.println(currentValue + " " + myself.direction + "(" + myself.x + ", " + myself.y + ") <--- current");
 
-        List<PlayerState> possibleStates1 = possiblePlayerState(myself);
-        for (PlayerState nextState : possibleStates1) {
+        // avoid risk
+        List<PlayerStateWrapper> list = new LinkedList<>();
+        List<PlayerState> possibleStates = possiblePlayerState(myself);
+        for (PlayerState nextState : possibleStates) {
             if (nextState.x < 0 || nextState.x >= width) continue;
             if (nextState.y < 0 || nextState.y >= height) continue;
-
-            printPossibleDecision(gameBoard, myself, nextState);
-
             int nextValue = gameBoard[nextState.x][nextState.y];
-            if (nextValue > bestValue) {
-                bestValue = nextValue;
-                bestDecision = getAction(myself, nextState);
-                System.out.println("accept best decision = " + bestDecision);
-            } else if (nextValue >= bestValue) {
-                secondDecision = getAction(myself, nextState);
-                System.out.println("accept second best decision = " + secondDecision);
-            } else if (bestDecision.equals(getAction(myself, nextState)) && nextValue < bestValue) {
-                bestDecision = secondDecision;
-                System.out.println("avoid this action, use this instead = " + bestDecision);
-            }
+            String nextAction = getAction(myself, nextState);
+            if (nextValue <= 0) continue;
+            list.add(new PlayerStateWrapper(nextState, nextValue, nextAction));
         }
+        list.sort((a, b) -> b.value - a.value);
+        System.out.println(list);
 
-        System.out.println("X = (" + myself.x + ", " + myself.y + ") " + myself.direction + " ==> " + bestDecision);
-        return bestDecision;
+        PlayerStateWrapper bestAction = list.get(0);
+        if (bestAction.value > 2 && hasTarget(gameBoard, myself)) {
+            System.out.println("Attack!!!");
+            return "T";
+        }
+        System.out.println("Run!!! Go " + bestAction.action);
+        return bestAction.action;
+
+    }
+
+    public static class PlayerStateWrapper {
+        public PlayerState state;
+        public int value;
+        public String action;
+        public PlayerStateWrapper(PlayerState state, int value, String action) {
+            this.state = state;
+            this.value = value;
+            this.action = action;
+        }
+        @Override
+        public String toString() {
+            return value + " " + state.direction + "(" + state.x + ", " + state.y + ") --> " + action;
+        }
     }
 
     public void printPossibleDecision(int[][] gameBoard, PlayerState myself, PlayerState nextState) {
         try {
-            int currentValue = gameBoard[myself.x][myself.y];
-            System.out.println(currentValue + " " + myself.direction + "(" + myself.x + ", " + myself.y + ") <--- current");
-
             String action = getAction(myself, nextState);
-
             int nextValue = gameBoard[nextState.x][nextState.y];
             System.out.println(nextValue + " " + nextState.direction + "(" + nextState.x + ", " + nextState.y + ") ===> " + action);
         } catch (ArrayIndexOutOfBoundsException e) {
@@ -134,30 +132,42 @@ public class Application {
     }
 
     public boolean hasTarget(int[][] gameBoard, PlayerState myself) {
-        try {
-            if ("N".equals(myself.direction)) {
-                for (int i = 0; i <= ATTACH_RANGE; i++) {
-                    int y = myself.y - i;
+        if ("N".equals(myself.direction)) {
+            for (int i = 0; i <= ATTACH_RANGE; i++) {
+                int y = myself.y - i;
+                try {
                     if (gameBoard[myself.x][y] == 0) return true;
-                }
-            } else if ("E".equals(myself.direction)) {
-                for (int i = 0; i <= ATTACH_RANGE; i++) {
-                    int x = myself.x + i;
-                    if (gameBoard[x][myself.y] == 0) return true;
-                }
-            } else if ("S".equals(myself.direction)) {
-                for (int i = 0; i <= ATTACH_RANGE; i++) {
-                    int y = myself.y + i;
-                    if (gameBoard[myself.x][y] == 0) return true;
-                }
-            } else if ("W".equals(myself.direction)) {
-                for (int i = 0; i <= ATTACH_RANGE; i++) {
-                    int x = myself.x - i;
-                    if (gameBoard[x][myself.y] == 0) return true;
+                } catch (ArrayIndexOutOfBoundsException e) {
+                    // ignore
                 }
             }
-        } catch (ArrayIndexOutOfBoundsException e) {
-            // ignore
+        } else if ("E".equals(myself.direction)) {
+            for (int i = 0; i <= ATTACH_RANGE; i++) {
+                int x = myself.x + i;
+                try {
+                    if (gameBoard[x][myself.y] == 0) return true;
+                } catch (ArrayIndexOutOfBoundsException e) {
+                    // ignore
+                }
+            }
+        } else if ("S".equals(myself.direction)) {
+            for (int i = 0; i <= ATTACH_RANGE; i++) {
+                int y = myself.y + i;
+                try {
+                    if (gameBoard[myself.x][y] == 0) return true;
+                } catch (ArrayIndexOutOfBoundsException e) {
+                    // ignore
+                }
+            }
+        } else if ("W".equals(myself.direction)) {
+            for (int i = 0; i <= ATTACH_RANGE; i++) {
+                int x = myself.x - i;
+                try {
+                    if (gameBoard[x][myself.y] == 0) return true;
+                } catch (ArrayIndexOutOfBoundsException e) {
+                    // ignore
+                }
+            }
         }
         return false;
     }
@@ -313,41 +323,41 @@ public class Application {
         return false;
     }
 
-//    public static void main(String[] args) {
-//        ArenaUpdate arenaUpdate = new ArenaUpdate();
-//        arenaUpdate._links = new Links();
-//        arenaUpdate._links.self = new Self();
-//        arenaUpdate._links.self.href = "MYSELF";
-//        arenaUpdate.arena = new Arena();
-//        arenaUpdate.arena.dims = new ArrayList<>(2);
-//        arenaUpdate.arena.dims.add(0, 20);
-//        arenaUpdate.arena.dims.add(1, 10);
-//        arenaUpdate.arena.state = new HashMap<>();
-//        {
-//            PlayerState attacker = new PlayerState();
-//            attacker.direction = "E";
-//            attacker.x = 3;
-//            attacker.y = 5;
-//            arenaUpdate.arena.state.put("A", attacker);
-//        }
-//        {
-//            PlayerState attacker = new PlayerState();
-//            attacker.direction = "N";
-//            attacker.x = 5;
-//            attacker.y = 8;
-//            arenaUpdate.arena.state.put("B", attacker);
-//        }
-//        {
-//            PlayerState attacker = new PlayerState();
-//            attacker.direction = "E";
-//            attacker.x = 0;
-//            attacker.y = 5;
-//            arenaUpdate.arena.state.put("MYSELF", attacker);
-//        }
-//
-//        Application app = new Application();
-//        app.index(arenaUpdate);
-//    }
+    public static void main(String[] args) {
+        ArenaUpdate arenaUpdate = new ArenaUpdate();
+        arenaUpdate._links = new Links();
+        arenaUpdate._links.self = new Self();
+        arenaUpdate._links.self.href = "MYSELF";
+        arenaUpdate.arena = new Arena();
+        arenaUpdate.arena.dims = new ArrayList<>(2);
+        arenaUpdate.arena.dims.add(0, 20);
+        arenaUpdate.arena.dims.add(1, 10);
+        arenaUpdate.arena.state = new HashMap<>();
+        {
+            PlayerState attacker = new PlayerState();
+            attacker.direction = "E";
+            attacker.x = 3;
+            attacker.y = 5;
+            arenaUpdate.arena.state.put("A", attacker);
+        }
+        {
+            PlayerState attacker = new PlayerState();
+            attacker.direction = "N";
+            attacker.x = 5;
+            attacker.y = 8;
+            arenaUpdate.arena.state.put("B", attacker);
+        }
+        {
+            PlayerState attacker = new PlayerState();
+            attacker.direction = "N";
+            attacker.x = 0;
+            attacker.y = 5;
+            arenaUpdate.arena.state.put("MYSELF", attacker);
+        }
+
+        Application app = new Application();
+        app.index(arenaUpdate);
+    }
 
     public int[][] calculateGameBoard(ArenaUpdate arenaUpdate) {
         int width = arenaUpdate.arena.dims.get(0);
@@ -362,33 +372,65 @@ public class Application {
         String myUrl = arenaUpdate._links.self.href;
 
         for (String key : arenaUpdate.arena.state.keySet()) {
-            if (key.equals(myUrl)) continue;
-            PlayerState attacker = arenaUpdate.arena.state.get(key);
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    if (in0DeadZone(attacker, x, y)) {
-                        if (gameBoard[x][y] < 0 || gameBoard[x][y] > 0) {
-                            gameBoard[x][y] = 0;
+            if (key.equals(myUrl)) {
+                PlayerState myself = arenaUpdate.arena.state.get(myUrl);
+                for (int y = 0; y < height; y++) {
+                    for (int x = 0; x < width; x++) {
+                        if (in0DeadZone(myself, x, y)) {
+                            if (gameBoard[x][y] < 0 || gameBoard[x][y] > 1) {
+                                gameBoard[x][y] += 6;
+                            }
+                        } else if (in1DeadZone(myself, x, y)) {
+                            if (gameBoard[x][y] < 0 || gameBoard[x][y] > 1) {
+                                gameBoard[x][y] += 5;
+                            }
+                        } else if (in2DeadZone(myself, x, y)) {
+                            if (gameBoard[x][y] < 0 || gameBoard[x][y] > 2) {
+                                gameBoard[x][y] += 4;
+                            }
+                        } else if (in3DeadZone(myself, x, y)) {
+                            if (gameBoard[x][y] < 0 || gameBoard[x][y] > 3) {
+                                gameBoard[x][y] += 3;
+                            }
+                        } else if (in4DeadZone(myself, x, y)) {
+                            if (gameBoard[x][y] < 0 || gameBoard[x][y] > 4) {
+                                gameBoard[x][y] += 2;
+                            }
+                        } else if (in5DeadZone(myself, x, y)) {
+                            if (gameBoard[x][y] < 0 || gameBoard[x][y] > 5) {
+                                gameBoard[x][y] += 1;
+                            }
                         }
-                    } else if (in1DeadZone(attacker, x, y)) {
-                        if (gameBoard[x][y] < 0 || gameBoard[x][y] > 1) {
-                            gameBoard[x][y] = 1;
-                        }
-                    } else if (in2DeadZone(attacker, x, y)) {
-                        if (gameBoard[x][y] < 0 || gameBoard[x][y] > 2) {
-                            gameBoard[x][y] = 2;
-                        }
-                    } else if (in3DeadZone(attacker, x, y)) {
-                        if (gameBoard[x][y] < 0 || gameBoard[x][y] > 3) {
-                            gameBoard[x][y] = 3;
-                        }
-                    } else if (in4DeadZone(attacker, x, y)) {
-                        if (gameBoard[x][y] < 0 || gameBoard[x][y] > 4) {
-                            gameBoard[x][y] = 4;
-                        }
-                    } else if (in5DeadZone(attacker, x, y)) {
-                        if (gameBoard[x][y] < 0 || gameBoard[x][y] > 5) {
-                            gameBoard[x][y] = 5;
+                    }
+                }
+            } else {
+                PlayerState attacker = arenaUpdate.arena.state.get(key);
+                for (int y = 0; y < height; y++) {
+                    for (int x = 0; x < width; x++) {
+                        if (in0DeadZone(attacker, x, y)) {
+                            if (gameBoard[x][y] < 0 || gameBoard[x][y] > 0) {
+                                gameBoard[x][y] = 0;
+                            }
+                        } else if (in1DeadZone(attacker, x, y)) {
+                            if (gameBoard[x][y] < 0 || gameBoard[x][y] > 1) {
+                                gameBoard[x][y] = 1;
+                            }
+                        } else if (in2DeadZone(attacker, x, y)) {
+                            if (gameBoard[x][y] < 0 || gameBoard[x][y] > 2) {
+                                gameBoard[x][y] = 2;
+                            }
+                        } else if (in3DeadZone(attacker, x, y)) {
+                            if (gameBoard[x][y] < 0 || gameBoard[x][y] > 3) {
+                                gameBoard[x][y] = 3;
+                            }
+                        } else if (in4DeadZone(attacker, x, y)) {
+                            if (gameBoard[x][y] < 0 || gameBoard[x][y] > 4) {
+                                gameBoard[x][y] = 4;
+                            }
+                        } else if (in5DeadZone(attacker, x, y)) {
+                            if (gameBoard[x][y] < 0 || gameBoard[x][y] > 5) {
+                                gameBoard[x][y] = 5;
+                            }
                         }
                     }
                 }
@@ -401,20 +443,23 @@ public class Application {
         String myUrl = arenaUpdate._links.self.href;
         PlayerState myself = arenaUpdate.arena.state.get(myUrl);
 
+        StringBuilder sb = new StringBuilder();
+
         int width = arenaUpdate.arena.dims.get(0);
         int height = arenaUpdate.arena.dims.get(1);
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 if (x == myself.x && y == myself.y) {
-                    System.out.print("X ");
+                    sb.append("X ");
                 } else if (gameBoard[x][y] < 0) {
-                    System.out.print(". ");
+                    sb.append(". ");
                 } else {
-                    System.out.print(gameBoard[x][y] + " ");
+                    sb.append(gameBoard[x][y] + " ");
                 }
             }
-            System.out.println();
+            sb.append("\n");
         }
+        System.out.println(sb.toString());
     }
 
 
@@ -434,6 +479,11 @@ public class Application {
         public String direction;
         public Boolean wasHit;
         public Integer score;
+
+        @Override
+        public String toString() {
+            return direction + " (" + x + ", " + y + ")";
+        }
     }
 
     static class Arena {
